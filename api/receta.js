@@ -1,4 +1,22 @@
-export default async function handler(req, res) {
+// Middleware para habilitar CORS
+function permitirCORS(handler) {
+  return async (req, res) => {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Cambiar por 'https://www.carrefour.com.ar' si querés restringir
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
+    return handler(req, res);
+  };
+}
+
+// Función principal
+export default permitirCORS(async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
@@ -14,42 +32,41 @@ export default async function handler(req, res) {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "openrouter/cypher-alpha:free",
+        model: 'openrouter/cypher-alpha:free',
         messages: [
           {
-            role: "user",
-            content: `Generá una receta para: ${input}.
-Devolvela en formato JSON con dos propiedades:
-- "ingredientes": una lista simple con cantidades e ingredientes.
-- "preparacion": una lista de pasos numerados para prepararla.
-No escribas texto adicional ni explicaciones. Solo devolvé el JSON válido.`
-          }
+            role: 'system',
+            content: 'Sos un chef experto. Siempre devolveme una receta en formato JSON con dos claves: "ingredientes" como lista, y "preparacion" como lista.',
+          },
+          {
+            role: 'user',
+            content: input,
+          },
         ],
-        temperature: 0.7,
-        max_tokens: 1024
-      })
+      }),
     });
 
     const data = await response.json();
 
-    if (!data.choices || !data.choices.length) {
-      return res.status(500).json({ error: 'No se generó contenido', detalle: data });
-    }
+    const contenido = data?.choices?.[0]?.message?.content;
 
-    // Intentamos parsear JSON directamente
-    let receta;
     try {
-      receta = JSON.parse(data.choices[0].message.content);
-    } catch (e) {
-      return res.status(500).json({ error: 'La IA no devolvió JSON válido', raw: data.choices[0].message.content });
+      const json = JSON.parse(contenido);
+      return res.status(200).json({ receta: json });
+    } catch (err) {
+      return res.status(400).json({
+        error: 'La IA no devolvió JSON válido',
+        raw: contenido,
+      });
     }
-
-    res.status(200).json({ receta });
   } catch (error) {
-    res.status(500).json({ error: 'Error al generar receta', detalle: error.toString() });
+    return res.status(500).json({
+      error: 'No se generó contenido',
+      detalle: error,
+    });
   }
-}
+});
