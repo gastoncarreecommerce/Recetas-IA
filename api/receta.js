@@ -4,40 +4,38 @@ export default async function handler(req, res) {
   }
 
   const { input } = req.body;
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!input || !apiKey) {
     return res.status(400).json({ error: 'Falta input o API Key' });
   }
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/chat-bison-001:generateMessage', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'x-goog-api-key': apiKey
       },
       body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo",
-        messages: [
-          {
-            role: "user",
-            content: `Generá una receta detallada para: ${input}.
-Indicá los ingredientes con cantidades claras y los pasos numerados para prepararla.`
-          }
-        ],
-        max_tokens: 512,
-        temperature: 0.7
+        prompt: {
+          messages: [
+            {
+              content: `Generá una receta para: ${input}. Indicá los ingredientes con cantidades y los pasos para prepararla.`,
+              author: 'user'
+            }
+          ]
+        }
       })
     });
 
     const data = await response.json();
 
-    if (!data.choices || !data.choices.length) {
+    if (!data.candidates || !data.candidates.length) {
       return res.status(500).json({ error: 'No se generó contenido', detalle: data });
     }
 
-    const texto = data.choices[0].message.content;
+    const texto = data.candidates[0].content;
     res.status(200).json({ receta: texto });
   } catch (error) {
     res.status(500).json({ error: 'Error al generar receta', detalle: error.toString() });
