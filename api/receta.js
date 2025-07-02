@@ -1,4 +1,3 @@
-// api/receta.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
@@ -15,11 +14,11 @@ export default async function handler(req, res) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "models/gemini-pro-1.5" });
+    const model = genAI.getGenerativeModel({ model: "models/text-bison-001" });
 
     const result = await model.generateContent([
       `Generá una receta detallada para: ${input}.
-Devolveme una lista clara de ingredientes, y luego los pasos para prepararla.`
+Indicá los ingredientes con cantidades y los pasos para prepararla.`
     ]);
 
     const text = result.response.text();
