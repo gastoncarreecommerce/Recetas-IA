@@ -18,14 +18,16 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "mistral/mistral-7b-instruct", // podés cambiar el modelo si querés
+        model: "openai/gpt-3.5-turbo",
         messages: [
           {
             role: "user",
             content: `Generá una receta detallada para: ${input}.
 Indicá los ingredientes con cantidades claras y los pasos numerados para prepararla.`
           }
-        ]
+        ],
+        max_tokens: 512,
+        temperature: 0.7
       })
     });
 
