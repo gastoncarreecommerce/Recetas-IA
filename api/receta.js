@@ -11,19 +11,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/chat-bison-001:generateMessage', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: `Generá una receta detallada para: ${input}. Indicá los ingredientes con cantidades y los pasos para prepararla.` }],
-            role: 'user'
-          }
-        ]
+        prompt: {
+          messages: [
+            {
+              content: `Generá una receta para: ${input}. Indicá los ingredientes con cantidades y los pasos para prepararla.`,
+              author: 'user'
+            }
+          ]
+        }
       })
     });
 
@@ -33,10 +35,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'No se generó contenido', detalle: data });
     }
 
-    const texto = data.candidates[0].content.parts.map(function(p) {
-      return p.text;
-    }).join('\n');
-
+    const texto = data.candidates[0].content;
     res.status(200).json({ receta: texto });
   } catch (error) {
     res.status(500).json({ error: 'Error al generar receta', detalle: error.toString() });
