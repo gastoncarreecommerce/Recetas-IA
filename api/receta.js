@@ -18,14 +18,12 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "google/gemini-pro",
+        model: "openrouter/cypher-alpha:free",
         messages: [
           {
             role: "user",
             content: `Generá una receta completa para: ${input}.
-Incluí:
-- Una lista clara de ingredientes con cantidades.
-- Los pasos numerados y bien explicados para prepararla.`
+Incluí una lista de ingredientes con cantidades claras y los pasos numerados para prepararla.`
           }
         ],
         temperature: 0.7,
