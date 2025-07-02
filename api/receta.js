@@ -22,8 +22,11 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "user",
-            content: `Generá una receta completa para: ${input}.
-Incluí una lista de ingredientes con cantidades claras y los pasos numerados para prepararla.`
+            content: `Generá una receta para: ${input}.
+Devolvela en formato JSON con dos propiedades:
+- "ingredientes": una lista simple con cantidades e ingredientes.
+- "preparacion": una lista de pasos numerados para prepararla.
+No escribas texto adicional ni explicaciones. Solo devolvé el JSON válido.`
           }
         ],
         temperature: 0.7,
@@ -37,8 +40,15 @@ Incluí una lista de ingredientes con cantidades claras y los pasos numerados pa
       return res.status(500).json({ error: 'No se generó contenido', detalle: data });
     }
 
-    const texto = data.choices[0].message.content;
-    res.status(200).json({ receta: texto });
+    // Intentamos parsear JSON directamente
+    let receta;
+    try {
+      receta = JSON.parse(data.choices[0].message.content);
+    } catch (e) {
+      return res.status(500).json({ error: 'La IA no devolvió JSON válido', raw: data.choices[0].message.content });
+    }
+
+    res.status(200).json({ receta });
   } catch (error) {
     res.status(500).json({ error: 'Error al generar receta', detalle: error.toString() });
   }
