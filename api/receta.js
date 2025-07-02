@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "models/gemini-pro-1.5" });
 
     const result = await model.generateContent([
       `Generá una receta detallada para: ${input}.
