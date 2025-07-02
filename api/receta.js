@@ -1,26 +1,20 @@
 // Middleware para habilitar CORS
-function permitirCORS(handler) {
-  return async (req, res) => {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Cambiar por 'https://www.carrefour.com.ar' si querés restringir
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const allowCors = (handler) => async (req, res) => {
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Ajustalo si querés restringirlo
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
-
-    return handler(req, res);
-  };
-}
-
-// Función principal
-export default permitirCORS(async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
   }
 
+  return handler(req, res);
+};
+
+// Función principal del endpoint
+const handler = async (req, res) => {
   const { input } = req.body;
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -29,44 +23,63 @@ export default permitirCORS(async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: 'openrouter/cypher-alpha:free',
+        model: "openrouter/cypher-alpha:free",
         messages: [
           {
-            role: 'system',
-            content: 'Sos un chef experto. Siempre devolveme una receta en formato JSON con dos claves: "ingredientes" como lista, y "preparacion" como lista.',
-          },
-          {
-            role: 'user',
-            content: input,
-          },
-        ],
-      }),
+            role: "user",
+            content: `Generá una receta para "${input}" y devolvé solo un JSON válido con esta estructura:
+
+{
+  "ingredientes": ["...", "..."],
+  "preparacion": ["...", "..."]
+}
+
+Sin explicaciones ni texto adicional. Solo JSON plano.`
+          }
+        ]
+      })
     });
 
     const data = await response.json();
+    const completion = data.choices?.[0]?.message?.content;
 
-    const contenido = data?.choices?.[0]?.message?.content;
-
-    try {
-      const json = JSON.parse(contenido);
-      return res.status(200).json({ receta: json });
-    } catch (err) {
-      return res.status(400).json({
-        error: 'La IA no devolvió JSON válido',
-        raw: contenido,
+    if (!completion) {
+      return res.status(500).json({
+        error: "No se generó contenido",
+        detalle: data
       });
     }
+
+    // Eliminar ```json ... ``` si lo incluye
+    let raw = completion.trim();
+    if (raw.startsWith("```json")) {
+      raw = raw.replace(/^```json/, "").replace(/```$/, "").trim();
+    }
+
+    let receta;
+
+    try {
+      receta = JSON.parse(raw);
+    } catch (e) {
+      return res.status(500).json({
+        error: "La IA no devolvió JSON válido",
+        raw
+      });
+    }
+
+    return res.status(200).json({ receta });
+
   } catch (error) {
-    return res.status(500).json({
-      error: 'No se generó contenido',
-      detalle: error,
-    });
+    console.error("Error:", error);
+    return res.status(500).json({ error: "Error al generar receta", detalle: error.message });
   }
-});
+};
+
+export default allowCors(handler);
