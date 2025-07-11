@@ -38,10 +38,15 @@ const handler = async (req, res) => {
 
 {
   "ingredientes": ["...", "..."],
+  "cantidades": ["...", "..."],
   "preparacion": ["...", "..."]
 }
 
-Sin explicaciones ni texto adicional. Solo JSON plano.`
+Instrucciones estrictas:
+- En "ingredientes", devolvé solo los nombres genéricos del producto (ej: "LECHUGA", "PIMIENTO", "LECHE").
+- No pongas descripciones como "verde", "fresco", "descremada", ni cantidades ni unidades en ese array.
+- En "cantidades", devolvé las cantidades correspondientes, en el mismo orden que los ingredientes (ej: "1 planta", "200 ml").
+- Sin explicaciones ni texto adicional. Solo JSON plano.`
           }
         ]
       })
