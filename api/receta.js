@@ -1,7 +1,7 @@
 // Middleware para habilitar CORS
 const allowCors = (handler) => async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Ajustalo si querés restringirlo
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -12,6 +12,15 @@ const allowCors = (handler) => async (req, res) => {
 
   return handler(req, res);
 };
+
+// Lista de productos reales que aparecen en el XML
+const ingredientesValidos = [
+  "ACEITE", "ARROZ", "AZÚCAR", "BEBIDA", "CAFÉ", "CALDO", "CEREAL",
+  "CHOCOLATE", "CREMA DE LECHE", "DULCE DE LECHE", "EMPANADAS", "FIDEOS",
+  "GALLETITAS", "GASEOSA", "HARINA", "HELADO", "HUEVO", "JAMÓN", "LECHE",
+  "LECHE CONDENSADA", "LEVADURA", "MANTECA", "MERMELADA", "MAYONESA",
+  "MOSTAZA", "PAPA", "PAN", "QUESO", "SAL", "SALSA", "TOMATE", "VINO", "YOGUR"
+];
 
 // Función principal del endpoint
 const handler = async (req, res) => {
@@ -34,7 +43,11 @@ const handler = async (req, res) => {
         messages: [
           {
             role: "user",
-            content: `Generá una receta para "${input}" y devolvé solo un JSON válido con esta estructura:
+            content: `Generá una receta para "${input}". Solo podés usar ingredientes de la siguiente lista:
+
+[${ingredientesValidos.join(', ')}]
+
+Devolvé un JSON válido con esta estructura:
 
 {
   "ingredientes": ["...", "..."],
@@ -42,10 +55,9 @@ const handler = async (req, res) => {
   "preparacion": ["...", "..."]
 }
 
-Instrucciones estrictas:
-- En "ingredientes", devolvé solo los nombres genéricos del producto (ej: "LECHUGA", "PIMIENTO", "LECHE").
-- No pongas descripciones como "verde", "fresco", "descremada", ni cantidades ni unidades en ese array.
-- En "cantidades", devolvé las cantidades correspondientes, en el mismo orden que los ingredientes (ej: "1 planta", "200 ml").
+IMPORTANTE:
+- En "ingredientes", usá solo productos de la lista. No inventes.
+- En "cantidades", poné la unidad correspondiente.
 - Sin explicaciones ni texto adicional. Solo JSON plano.`
           }
         ]
@@ -62,7 +74,7 @@ Instrucciones estrictas:
       });
     }
 
-    // Eliminar ```json ... ``` si lo incluye
+    // Limpiar posible bloque ```json
     let raw = completion.trim();
     if (raw.startsWith("```json")) {
       raw = raw.replace(/^```json/, "").replace(/```$/, "").trim();
