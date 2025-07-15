@@ -39,7 +39,7 @@ const handler = async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openrouter/cypher-alpha:free",
+        model: "moonshotai/kimi-k2:free",
         messages: [
           {
             role: "user",
